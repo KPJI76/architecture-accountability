@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture Leadership Framework</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal: { 400: '#2dd4bf', 500: '#14b8a6', 900: '#134e4a' },
+            gold: { 500: '#e8a630' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel for JSX transpilation in the browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-300 antialiased selection:bg-teal-900 selection:text-teal-100">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // --- Inline Icon Components (Replacing Lucide Imports for Standalone HTML) ---
+    const IconBase = ({ d, children, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        {d && <path d={d} />}
+        {children}
+      </svg>
+    );
+
+    const Scale = ({ className }) => <IconBase className={className}><path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></IconBase>;
+    const Network = ({ className }) => <IconBase className={className}><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></IconBase>;
+    const ShieldAlert = ({ className }) => <IconBase className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2-1 6-3 6-3 2.11 0 5.43 1.5 6 3a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></IconBase>;
+    const Users = ({ className }) => <IconBase className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
+    const Trash2 = ({ className }) => <IconBase className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconBase>;
+    const ChevronRight = ({ className }) => <IconBase className={className}><polyline points="9 18 15 12 9 6"/></IconBase>;
+    const Cpu = ({ className }) => <IconBase className={className}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></IconBase>;
+    const Layers = ({ className }) => <IconBase className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></IconBase>;
+    const CheckCircle2 = ({ className }) => <IconBase className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></IconBase>;
+
+    // --- Content Data ---
+    const domains = [
+      {
+        id: 1,
+        icon: Scale,
+        title: "Strategic Trade-off Decisions",
+        context: "AI can analyze custom code and surface remediation options. But deciding whether a capability should be retired, reimplemented, or preserved requires understanding future operating models and business priorities.",
+        rationale: "That's strategic judgment, not technical analysis.",
+        role: "The architect holds decision authority to weight organizational context — board commitments, vendor relationships, workforce capability, operating model constraints — and translate those into a defensible platform strategy. That authority cannot be delegated."
+      },
+      {
+        id: 2,
+        icon: Network,
+        title: "Cross-System Integration Governance",
+        context: "AI can generate mappings and orchestrate approved tool calls across platforms (Salesforce, SAP, etc). But it cannot define what data or actions are permitted to cross trust boundaries. Integration governance is about defining clear boundaries, permissions, and failure handling.",
+        rationale: "That's an architectural control decision.",
+        role: "The architect defines the integration standard, enforces it across vendors, and makes trade-off calls when operational needs conflict with governance policy. AI monitors conformance. The architect owns it."
+      },
+      {
+        id: 3,
+        icon: ShieldAlert,
+        title: "Risk & Consequence Accountability",
+        context: "AI can help document, classify, and monitor compliance. But it cannot carry accountability when decisions impact customers, operations, or regulatory requirements.",
+        rationale: "EU AI Act requirements are clear: human oversight is mandatory for high-risk systems. That's a design constraint, not an option.",
+        role: "The architect is the named accountable party for architectural decisions that carry regulatory consequences. No AI can hold that accountability."
+      },
+      {
+        id: 4,
+        icon: Users,
+        title: "Organizational Reality",
+        context: "AI cannot read informal resistance or understand adoption barriers. Dispatchers override systems they don't fully trust. Technicians question routes that don't match their experience.",
+        rationale: "The real challenge is never just the algorithm. It's whether people will actually follow the system.",
+        role: "The architect navigates organizational topology — the political map — and sequences architectural decisions in a way that builds stakeholder support rather than triggering resistance. AI has no political capital to spend."
+      },
+      {
+        id: 5,
+        icon: Trash2,
+        title: "Evolution & Obsolescence",
+        context: "AI can identify stale code and unused integrations. But it cannot decide what should be retired, and when. Retirement decisions balance technical debt, business value, and organizational timing.",
+        rationale: "AI surfaces candidates. Humans make the final call.",
+        role: "The architect maintains the long view — the platform lifecycle roadmap — and makes sequencing decisions that balance debt reduction, delivery, and organizational capacity. AI assists with data. The architect owns the timeline."
+      }
+    ];
+
+    const metrics = [
+      "Whether AI is constrained before it touches core systems.",
+      "Whether the organization can prove who approved what, and why.",
+      "Whether the enterprise can recover when an AI action goes wrong.",
+      "Whether technical debt is being reduced rather than multiplied by automation.",
+      "Whether business leaders trust the architecture enough to let agents act at all."
+    ];
+
+    // --- Main App Component ---
+    function App() {
+      const [activeTab, setActiveTab] = useState(0);
+
+      return (
+        <div className="min-h-screen">
+          
+          {/* Header Section */}
+          <header className="border-b border-slate-800 bg-slate-900/50 pt-16 pb-12 px-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center gap-3 mb-6">
+                <Cpu className="w-6 h-6 text-teal-400" />
+                <span className="text-teal-400 font-mono text-sm tracking-widest uppercase font-medium">Architecture Leadership Framework</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-8 leading-tight">
+                Five Architectural Domains <br/>
+                <span className="text-slate-500">AI Still Cannot Own</span>
+              </h1>
+              
+              <div className="grid md:grid-cols-2 gap-12 text-slate-400 text-lg">
+                <div>
+                  <p className="mb-4">
+                    At a field service summit last year, the moderator put a simple question to the room: <strong className="text-slate-200 font-medium">"How often do you override the AI scheduling recommendation?"</strong> Every hand went up. Utilities. Telco. Manufacturing.
+                  </p>
+                  <p>
+                    That moment revealed something confirmed across multiple AI deployments in ERP and field service: Technology accelerates the work. Accountability stays with humans.
+                  </p>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-lg border-l-4 border-l-gold-500" style={{ borderLeftColor: '#e8a630' }}>
+                  <h3 className="text-slate-200 font-semibold mb-2">The Irreplaceable 40%</h3>
+                  <p className="text-base">
+                    What does architecture decision-making look like when AI handles 60% of the analytical work? The answer is simple. <strong className="text-white">The remaining 40% gets harder, more consequential, and more visible.</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Interactive Framework Section */}
+          <section className="py-16 px-6 max-w-6xl mx-auto">
+            <div className="flex items-center gap-3 mb-8">
+              <Layers className="w-5 h-5 text-slate-500" />
+              <h2 className="text-2xl font-semibold text-slate-200">The 5 Domains of Human Accountability</h2>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-8">
+              
+              {/* Navigation Sidebar */}
+              <div className="w-full lg:w-1/3 flex flex-col gap-2">
+                {domains.map((domain, index) => {
+                  const Icon = domain.icon;
+                  const isActive = activeTab === index;
+                  return (
+                    <button
+                      key={domain.id}
+                      onClick={() => setActiveTab(index)}
+                      className={`flex items-center gap-4 w-full text-left p-4 rounded-lg transition-all duration-200 border ${
+                        isActive 
+                          ? 'bg-slate-900 border-teal-500/50 shadow-[0_0_15px_rgba(0,219,196,0.05)]' 
+                          : 'bg-transparent border-transparent hover:bg-slate-900/50 hover:border-slate-800'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-md ${isActive ? 'bg-teal-500/10 text-teal-400' : 'bg-slate-800 text-slate-400'}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className={`text-sm font-mono tracking-wider mb-1 ${isActive ? 'text-teal-400' : 'text-slate-500'}`}>
+                          DOMAIN 0{domain.id}
+                        </div>
+                        <div className={`font-medium ${isActive ? 'text-slate-100' : 'text-slate-400'}`}>
+                          {domain.title}
+                        </div>
+                      </div>
+                      {isActive && <ChevronRight className="w-5 h-5 text-teal-500" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Content Panel */}
+              <div className="w-full lg:w-2/3 bg-slate-900 border border-slate-800 rounded-xl p-8 lg:p-12 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+
+                <div className="relative z-10">
+                  <div className="text-teal-400 font-mono text-sm tracking-widest mb-4">
+                    DOMAIN 0{domains[activeTab].id}
+                  </div>
+                  <h2 className="text-3xl font-bold text-slate-100 mb-8">
+                    {domains[activeTab].title}
+                  </h2>
+
+                  <div className="space-y-6 text-lg text-slate-300">
+                    <p>{domains[activeTab].context}</p>
+                    <p className="text-slate-400 italic">"{domains[activeTab].rationale}"</p>
+                  </div>
+
+                  <div className="mt-10 bg-slate-950 border border-slate-800 rounded-lg p-6 border-l-2 border-l-teal-500">
+                    <h4 className="text-sm font-mono tracking-widest text-slate-500 uppercase mb-3 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                      Role of the Human Architect
+                    </h4>
+                    <p className="text-slate-200 font-medium leading-relaxed">
+                      {domains[activeTab].role}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Field Service & Future Metrics Section */}
+          <section className="bg-slate-900 border-t border-slate-800 py-16 px-6">
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16">
+              
+              {/* Field Service Dimension */}
+              <div>
+                <h2 className="text-2xl font-bold text-slate-100 mb-6">The Field Service Dimension</h2>
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-8">
+                  <p className="text-slate-400 mb-6 leading-relaxed">
+                    IBM's FSM analysis (Dec 2025) confirms: <strong className="text-slate-200">"Modern platforms eliminate fragmentation. They combine FSM, EAM, IoT and AI into one architecture, governed under shared data and security standards."</strong>
+                  </p>
+                  <div className="bg-slate-900 p-5 rounded-lg border border-slate-800">
+                    <p className="text-slate-300 text-sm">
+                      The architectural design of that unified platform — what data model governs asset master, how FSM-EAM-SAP integration is sequenced, where AI decision authority begins and ends — is a human architecture call. <span className="text-teal-400 font-semibold">The AI operates inside it.</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Architecture Metrics */}
+              <div>
+                <h2 className="text-2xl font-bold text-slate-100 mb-6">The 5 Metrics of 2030 Architecture</h2>
+                <p className="text-slate-400 mb-6">Five years from now, strong architectural accountability will be measured by:</p>
+                <ul className="space-y-4">
+                  {metrics.map((metric, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-gold-500 shrink-0 mt-0.5" style={{ color: '#e8a630' }} />
+                      <span className="text-slate-300">{metric}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Footer */}
+          <footer className="py-12 px-6 text-center border-t border-slate-800">
+            <p className="text-slate-400 max-w-2xl mx-auto text-lg mb-4">
+              The job title may stay the same. The skill profile will not.
+            </p>
+            <p className="text-slate-500 max-w-2xl mx-auto">
+              The more autonomous the tools become, the more important the architect becomes as the person who decides where machine judgment ends and enterprise responsibility begins.
+            </p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // Render App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
